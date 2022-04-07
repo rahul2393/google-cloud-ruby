@@ -84,17 +84,112 @@ module Google
             # @!attribute [rw] display_name
             #   @return [::String]
             #     The name of this instance configuration as it appears in UIs.
+            # @!attribute [r] config_type
+            #   @return [::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig::Type]
+            #     Whether this instance config is a Google or User Managed Configuration.
             # @!attribute [rw] replicas
             #   @return [::Array<::Google::Cloud::Spanner::Admin::Instance::V1::ReplicaInfo>]
             #     The geographic placement of nodes in this instance configuration and their
             #     replication properties.
+            #     (-- TODO(b/193081755): To create user managed configurations, input
+            #     `replicas` must include all replicas in `replicas` of the `base_config`
+            #     and include one or more replicas in the `optional_replicas` of the
+            #     `base_config`. --)
+            # @!attribute [r] optional_replicas
+            #   @return [::Array<::Google::Cloud::Spanner::Admin::Instance::V1::ReplicaInfo>]
+            #     The available optional replicas to choose from for user managed
+            #     configurations. Populated for Google managed configurations.
+            # @!attribute [rw] base_config
+            #   @return [::String]
+            #     Base configuration name, e.g. projects/<project_name>/instanceConfigs/nam3,
+            #     based on which this configuration is created. Only set for user managed
+            #     configurations. base_config must refer to a configuration of type
+            #     GOOGLE_MANAGED.
+            # @!attribute [rw] labels
+            #   @return [::Google::Protobuf::Map{::String => ::String}]
+            #     Cloud Labels are a flexible and lightweight mechanism for organizing cloud
+            #     resources into groups that reflect a customer's organizational needs and
+            #     deployment strategies. Cloud Labels can be used to filter collections of
+            #     resources. They can be used to control how resource metrics are aggregated.
+            #     And they can be used as arguments to policy management rules (e.g. route,
+            #     firewall, load balancing, etc.).
+            #
+            #      * Label keys must be between 1 and 63 characters long and must conform to
+            #        the following regular expression: `[a-z][a-z0-9_-]{0,62}`.
+            #      * Label values must be between 0 and 63 characters long and must conform
+            #        to the regular expression `[a-z0-9_-]{0,63}`.
+            #      * No more than 64 labels can be associated with a given resource.
+            #
+            #     See https://goo.gl/xmQnxf for more information on and examples of labels.
+            #
+            #     If you plan to use labels in your own code, please note that additional
+            #     characters may be allowed in the future. Therefore, you are advised to use
+            #     an internal label representation, such as JSON, which doesn't rely upon
+            #     specific characters being disallowed.  For example, representing labels
+            #     as the string:  name + "_" + value  would prove problematic if we were to
+            #     allow "_" in a future release.
+            # @!attribute [rw] etag
+            #   @return [::String]
+            #     etag is used for optimistic concurrency control as a way
+            #     to help prevent simultaneous updates of a instance config from overwriting
+            #     each other. It is strongly suggested that systems make use of the etag in
+            #     the read-modify-write cycle to perform instance config updates in order to
+            #     avoid race conditions: An etag is returned in the response which contains
+            #     instance configs, and systems are expected to put that etag in the request
+            #     to update instance config to ensure that their change will be applied to
+            #     the same version of the instance config.
+            #     If no etag is provided in the call to update instance config, then the
+            #     existing instance config is overwritten blindly.
             # @!attribute [rw] leader_options
             #   @return [::Array<::String>]
             #     Allowed values of the “default_leader” schema option for databases in
             #     instances that use this instance configuration.
+            # @!attribute [r] reconciling
+            #   @return [::Boolean]
+            #     If true, the instance config is being created or updated. If false,
+            #     there are no ongoing operations for the instance config.
+            # @!attribute [r] state
+            #   @return [::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig::State]
+            #     The current instance config state.
             class InstanceConfig
               include ::Google::Protobuf::MessageExts
               extend ::Google::Protobuf::MessageExts::ClassMethods
+
+              # @!attribute [rw] key
+              #   @return [::String]
+              # @!attribute [rw] value
+              #   @return [::String]
+              class LabelsEntry
+                include ::Google::Protobuf::MessageExts
+                extend ::Google::Protobuf::MessageExts::ClassMethods
+              end
+
+              # The type of this configuration.
+              module Type
+                # Unspecified.
+                TYPE_UNSPECIFIED = 0
+
+                # Google managed configuration.
+                GOOGLE_MANAGED = 1
+
+                # User managed configuration.
+                USER_MANAGED = 2
+              end
+
+              # Indicates the current state of the instance config.
+              module State
+                # Not specified.
+                STATE_UNSPECIFIED = 0
+
+                # The instance config is still being created.
+                CREATING = 1
+
+                # The instance config is fully created and ready to be used to create
+                # instances.
+                # (-- api-linter: core::0216::value-synonyms=disabled
+                #     aip.dev/not-precedent: To be consistent with Instance State. --)
+                READY = 2
+              end
             end
 
             # An isolated set of Cloud Spanner resources on which databases can be hosted.
@@ -230,6 +325,170 @@ module Google
             #     Required. The name of the requested instance configuration. Values are of
             #     the form `projects/<project>/instanceConfigs/<config>`.
             class GetInstanceConfigRequest
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # The request for
+            # [CreateInstanceConfigRequest][InstanceAdmin.CreateInstanceConfigRequest].
+            # @!attribute [rw] parent
+            #   @return [::String]
+            #     The name of the project in which to create the instance config. Values
+            #     are of the form `projects/<project>`.
+            # @!attribute [rw] instance_config_id
+            #   @return [::String]
+            #     The ID of the instance config to create.  Valid identifiers are of the
+            #     form `custom-[-a-z0-9]*[a-z0-9]` and must be between 2 and 64 characters in
+            #     length. The `custom-` prefix is required to avoid name conflicts with
+            #     Google managed configurations.
+            # @!attribute [rw] instance_config
+            #   @return [::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig]
+            #     The InstanceConfig proto of the configuration to create.
+            #     instance_config.name must be
+            #     `<parent>/instanceConfigs/<instance_config_id>`.
+            #     instance_config.base_config must be a Google managed configuration id, e.g.
+            #     us-east1, nam3.
+            # @!attribute [rw] validate_only
+            #   @return [::Boolean]
+            #     An option to validate, but not actually execute, a request,
+            #     and provide the same response.
+            class CreateInstanceConfigRequest
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # The request for
+            # [UpdateInstanceConfigRequest][InstanceAdmin.UpdateInstanceConfigRequest].
+            # @!attribute [rw] instance_config
+            #   @return [::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig]
+            #     The user instance config to update, which must always include the instance
+            #     config name. Otherwise, only fields mentioned in [update_mask][] need be
+            #     included. To prevent conflicts of concurrent updates,
+            #     {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig#reconciling etag} can
+            #     be used.
+            # @!attribute [rw] update_mask
+            #   @return [::Google::Protobuf::FieldMask]
+            #     A mask specifying which fields in
+            #     {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig InstanceConfig} should be
+            #     updated. The field mask must always be specified; this prevents any future
+            #     fields in {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig InstanceConfig}
+            #     from being erased accidentally by clients that do not know about them. Only
+            #     display_name and labels can be updated.
+            # @!attribute [rw] validate_only
+            #   @return [::Boolean]
+            #     An option to validate, but not actually execute, a request,
+            #     and provide the same response.
+            class UpdateInstanceConfigRequest
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # The request for
+            # [DeleteInstanceConfigRequest][InstanceAdmin.DeleteInstanceConfigRequest].
+            # @!attribute [rw] name
+            #   @return [::String]
+            #     The name of the instance configuration to be deleted.
+            #     Values are of the form
+            #     `projects/<project>/instanceConfigs/<instance_config>`
+            # @!attribute [rw] etag
+            #   @return [::String]
+            #     Used for optimistic concurrency control as a way to help prevent
+            #     simultaneous deletes of an instance config from overwriting each
+            #     other. If not empty, the API
+            #     only deletes the instance config when the etag provided matches the current
+            #     status of the requested instance config. Otherwise, deletes the instance
+            #     config without checking the current status of the requested instance
+            #     config.
+            # @!attribute [rw] validate_only
+            #   @return [::Boolean]
+            #     An option to validate, but not actually execute, a request,
+            #     and provide the same response.
+            class DeleteInstanceConfigRequest
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # The request for
+            # [ListInstanceConfigOperations][InstanceAdmin.ListInstanceConfigOperations].
+            # @!attribute [rw] parent
+            #   @return [::String]
+            #     Required. The project of the instance config operations.
+            #     Values are of the form `projects/<project>`.
+            # @!attribute [rw] filter
+            #   @return [::String]
+            #     An expression that filters the list of returned operations.
+            #
+            #     A filter expression consists of a field name, a
+            #     comparison operator, and a value for filtering.
+            #     The value must be a string, a number, or a boolean. The comparison operator
+            #     must be one of: `<`, `>`, `<=`, `>=`, `!=`, `=`, or `:`.
+            #     Colon `:` is the contains operator. Filter rules are not case sensitive.
+            #
+            #     The following fields in the {::Google::Longrunning::Operation Operation}
+            #     are eligible for filtering:
+            #
+            #       * `name` - The name of the long-running operation
+            #       * `done` - False if the operation is in progress, else true.
+            #       * `metadata.@type` - the type of metadata. For example, the type string
+            #          for [CreateInstanceConfigMetadata][] is
+            #          `type.googleapis.com/google.spanner.admin.database.v1.CreateInstanceConfigMetadata`.
+            #       * `metadata.<field_name>` - any field in metadata.value.
+            #       * `error` - Error associated with the long-running operation.
+            #       * `response.@type` - the type of response.
+            #       * `response.<field_name>` - any field in response.value.
+            #
+            #     You can combine multiple expressions by enclosing each expression in
+            #     parentheses. By default, expressions are combined with AND logic. However,
+            #     you can specify AND, OR, and NOT logic explicitly.
+            #
+            #     Here are a few examples:
+            #
+            #       * `done:true` - The operation is complete.
+            #       * `(metadata.@type=` \
+            #         `type.googleapis.com/google.spanner.admin.instance.v1.CreateInstanceConfigMetadata)
+            #         AND` \
+            #         `(metadata.instance_config.name:custom-config) AND` \
+            #         `(metadata.progress.start_time < \"2021-03-28T14:50:00Z\") AND` \
+            #         `(error:*)` - Return operations where:
+            #         * The operation's metadata type is [CreateInstanceConfigMetadata][].
+            #         * The instance config name contains "custom-config".
+            #         * The operation started before 2021-03-28T14:50:00Z.
+            #         * The operation resulted in an error.
+            # @!attribute [rw] page_size
+            #   @return [::Integer]
+            #     Number of operations to be returned in the response. If 0 or
+            #     less, defaults to the server's maximum allowed page size.
+            # @!attribute [rw] page_token
+            #   @return [::String]
+            #     If non-empty, `page_token` should contain a
+            #     [next_page_token][ListInstanceConfigOperationsResponse.next_page_token]
+            #     from a previous [ListInstanceConfigOperationsResponse][] to the
+            #     same `parent` and with the same `filter`.
+            class ListInstanceConfigOperationsRequest
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # The response for
+            # [ListInstanceConfigOperations][InstanceAdmin.ListInstanceConfigOperations].
+            # @!attribute [rw] operations
+            #   @return [::Array<::Google::Longrunning::Operation>]
+            #     The list of matching instance config [long-running
+            #     operations][google.longrunning.Operation]. Each operation's name will be
+            #     prefixed by the instance config's name. The operation's
+            #     {::Google::Longrunning::Operation#metadata metadata} field type
+            #     `metadata.type_url` describes the type of the metadata.
+            #     (-- go/not-api-precedent: It is not generally recommended to return
+            #         google.longrunning.Operation objects in a list because it requires
+            #         custom code from client libraries in every language. --)
+            #     (-- api-linter: core::0132::response-unknown-fields=disabled
+            #         aip.dev/not-precedent: This is the correct field type. --)
+            # @!attribute [rw] next_page_token
+            #   @return [::String]
+            #     `next_page_token` can be sent in a subsequent
+            #     [ListInstanceConfigOperations][InstanceAdmin.ListInstanceConfigOperations]
+            #     call to fetch more of the matching metadata.
+            class ListInstanceConfigOperationsResponse
               include ::Google::Protobuf::MessageExts
               extend ::Google::Protobuf::MessageExts::ClassMethods
             end
@@ -389,6 +648,48 @@ module Google
             #   @return [::Google::Protobuf::Timestamp]
             #     The time at which this operation failed or was completed successfully.
             class UpdateInstanceMetadata
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # Metadata type for the operation returned by
+            # {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceAdmin::Client#create_instance_config CreateInstanceConfig}.
+            # @!attribute [rw] instance_config
+            #   @return [::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig]
+            #     The target instance config end state.
+            # @!attribute [rw] start_time
+            #   @return [::Google::Protobuf::Timestamp]
+            #     The time at which
+            #     {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceAdmin::Client#create_instance_config CreateInstanceConfig} request was
+            #     received.
+            # @!attribute [rw] cancel_time
+            #   @return [::Google::Protobuf::Timestamp]
+            #     The time at which this operation was cancelled.
+            # @!attribute [rw] end_time
+            #   @return [::Google::Protobuf::Timestamp]
+            #     The time at which this operation failed or was completed successfully.
+            class CreateInstanceConfigMetadata
+              include ::Google::Protobuf::MessageExts
+              extend ::Google::Protobuf::MessageExts::ClassMethods
+            end
+
+            # Metadata type for the operation returned by
+            # {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceAdmin::Client#update_instance_config UpdateInstanceConfig}.
+            # @!attribute [rw] instance_config
+            #   @return [::Google::Cloud::Spanner::Admin::Instance::V1::InstanceConfig]
+            #     The desired instance config after updating.
+            # @!attribute [rw] start_time
+            #   @return [::Google::Protobuf::Timestamp]
+            #     The time at which
+            #     {::Google::Cloud::Spanner::Admin::Instance::V1::InstanceAdmin::Client#update_instance_config UpdateInstanceConfig} request was
+            #     received.
+            # @!attribute [rw] cancel_time
+            #   @return [::Google::Protobuf::Timestamp]
+            #     The time at which this operation was cancelled.
+            # @!attribute [rw] end_time
+            #   @return [::Google::Protobuf::Timestamp]
+            #     The time at which this operation failed or was completed successfully.
+            class UpdateInstanceConfigMetadata
               include ::Google::Protobuf::MessageExts
               extend ::Google::Protobuf::MessageExts::ClassMethods
             end
